@@ -11,6 +11,12 @@
   "search": {
     "message": "搜索"
   },
+  "unknown": {
+    "message": "未知"
+  },
+  "system": {
+    "message": "系統"
+  },
   "screencastMode": {
     "message": "截屏模式"
   },
@@ -19,9 +25,6 @@
   },
   "feedback": {
     "message": "問題反饋"
-  },
-  "discord": {
-    "message": "和朋友一起玩"
   },
   "changeLanguage": {
     "message": "切換語言"
@@ -47,11 +50,20 @@
   "deleteFriend": {
     "message": "刪除好友"
   },
+  "share": {
+    "message": "分享"
+  },
+  "shareDesc": {
+    "message": "一起來玩 $1"
+  },
+  "inviteValidFriend": {
+    "message": "邀請好友"
+  },
   "inviteFriend": {
     "message": "邀請"
   },
-  "sendTomeInvite": {
-    "message": "發來邀請"
+  "sendToMeInvite": {
+    "message": "$1 发来邀請"
   },
   "playing": {
     "message": "正在玩《$1》"
@@ -96,16 +108,37 @@
     "message": "不匹配新密碼"
   },
   "keySetting": {
-    "message": "按鍵"
+    "message": "控制器"
+  },
+  "keySettingJoypad1": {
+    "message": "控制器 1 - 鍵盤映射"
+  },
+  "keySettingJoypad2": {
+    "message": "控制器 2 - 鍵盤映射"
   },
   "shortcut": {
     "message": "快捷键"
   },
+  "shortcutGlobal": {
+    "message": "全局"
+  },
+  "shortcutHost": {
+    "message": "主機"
+  },
+  "shortcutReadMsg": {
+    "message": "打開未讀消息"
+  },
   "shortcutSearch": {
     "message": "搜索"
   },
+  "shortcutHelp": {
+    "message": "幫助"
+  },
   "shortcutSettings": {
     "message": "設置"
+  },
+  "shortcutScreenshot": {
+    "message": "截圖"
   },
   "shortcutSave": {
     "message": "保存狀態"
@@ -113,11 +146,20 @@
   "shortcutLoad": {
     "message": "加載狀態"
   },
+  "shortcutOpenRam": {
+    "message": "RAM 查看器"
+  },
+  "shortcutOpenCheat": {
+    "message": "金手指"
+  },
   "soundSetting": {
     "message": "聲音"
   },
   "volumeSetting": {
     "message": "音量"
+  },
+  "hintVolume": {
+    "message": "提示"
   },
   "notificationVolume": {
     "message": "通知"
@@ -145,6 +187,24 @@
   },
   "license": {
     "message": "許可證"
+  },
+  "cheatSettingsTitle": {
+    "message": "金手指（$1）"
+  },
+  "cheatCode": {
+    "message": "Code"
+  },
+  "cheatComment": {
+    "message": "備註"
+  },
+  "cheatEnable": {
+    "message": "啟用"
+  },
+  "cheatToggleKey": {
+    "message": "鍵綁定"
+  },
+  "cheatAdd": {
+    "message": "添加"
   },
   "loginTitle": {
     "message": "登錄"
@@ -209,6 +269,12 @@
   "gameComment": {
     "message": "用戶評論"
   },
+  "addComment": {
+    "message": "編寫評論"
+  },
+  "selfComment": {
+    "message": "我"
+  },
   "noneComment": {
     "message": "沒有評論"
   },
@@ -224,14 +290,29 @@
   "placeholderSearch": {
     "message": "$1 搜索遊戲或者好友"
   },
+  "placeholderRoomSearch": {
+    "message": "$1 搜索房間或者好友"
+  },
   "placeholderSearchPlaying": {
     "message": "$1 更改遊戲或者邀請好友"
+  },
+  "tipKeybindingExist": {
+    "message": "該鍵存在重複綁定"
+  },
+  "tipCheatCodeExist": {
+    "message": "Code 已經存在"
+  },
+  "tipCheatCodeFormatErr": {
+    "message": "Code 格式錯誤"
   },
   "tipRoomCrowded": {
     "message": "房間人數過多"
   },
   "tipChangePassword": {
     "message": "修改密碼成功"
+  },
+  "tipApplyFriendSuccess": {
+    "message": "請求已經發送"
   },
   "tipIviteSuccess": {
     "message": "邀請已經發送"
@@ -250,6 +331,12 @@
   },
   "tipGameStateLoad": {
     "message": "加載$1成功"
+  },
+  "tipHostSetting": {
+    "message": "改選項只對主機有效"
+  },
+  "tipScreenshotSaved": {
+    "message": "截圖已保存到桌面"
   },
   "code404001": { "message": "用戶已存在" },
   "code404002": { "message": "賬號或密碼錯誤" },

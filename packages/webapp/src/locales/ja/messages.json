@@ -11,6 +11,12 @@
   "search": {
     "message": "探す"
   },
+  "unknown": {
+    "message": "わからない"
+  },
+  "system": {
+    "message": "システム"
+  },
   "screencastMode": {
     "message": "スクリーンショットモード"
   },
@@ -19,9 +25,6 @@
   },
   "feedback": {
     "message": "フィードバック"
-  },
-  "discord": {
-    "message": "Discord"
   },
   "changeLanguage": {
     "message": "スイッチ言語"
@@ -47,11 +50,20 @@
   "deleteFriend": {
     "message": "友達を削除します"
   },
+  "share": {
+    "message": "シェア"
+  },
+  "shareDesc": {
+    "message": "一緒に遊んでみましょう $1"
+  },
+  "inviteValidFriend": {
+    "message": "友達を招待"
+  },
   "inviteFriend": {
     "message": "招待"
   },
-  "sendTomeInvite": {
-    "message": "送信招待"
+  "sendToMeInvite": {
+    "message": "$1 招待状を送る"
   },
   "playing": {
     "message": "演奏《$1》"
@@ -96,16 +108,37 @@
     "message": "新しいパスワードを一致させない"
   },
   "keySetting": {
-    "message": "キー設定"
+    "message": "ジョイパッド"
+  },
+  "keySettingJoypad1": {
+    "message": "ジョイパッド 1"
+  },
+  "keySettingJoypad2": {
+    "message": "ジョイパッド 2"
   },
   "shortcut": {
     "message": "ホットキー"
   },
+  "shortcutGlobal": {
+    "message": "グローバル"
+  },
+  "shortcutHost": {
+    "message": "ホスト"
+  },
+  "shortcutReadMsg": {
+    "message": "未読メッセージを開く"
+  },
   "shortcutSearch": {
     "message": "探す"
   },
+  "shortcutHelp": {
+    "message": "ヘルプ"
+  },
   "shortcutSettings": {
     "message": "設定"
+  },
+  "shortcutScreenshot": {
+    "message": "スクリーンショット"
   },
   "shortcutSave": {
     "message": "状態を保存"
@@ -113,11 +146,20 @@
   "shortcutLoad": {
     "message": "読み込み状態"
   },
+  "shortcutOpenRam": {
+    "message": "RAM ビューア"
+  },
+  "shortcutOpenCheat": {
+    "message": "チート設定"
+  },
   "soundSetting": {
     "message": "音"
   },
   "volumeSetting": {
     "message": "音量"
+  },
+  "hintVolume": {
+    "message": "ヒント"
   },
   "notificationVolume": {
     "message": "通知"
@@ -145,6 +187,24 @@
   },
   "license": {
     "message": "ライセンス"
+  },
+  "cheatSettingsTitle": {
+    "message": "Cheat Settings ($1)"
+  },
+  "cheatCode": {
+    "message": "Code"
+  },
+  "cheatComment": {
+    "message": "述べる"
+  },
+  "cheatEnable": {
+    "message": "開いてください"
+  },
+  "cheatToggleKey": {
+    "message": "キーバインディング"
+  },
+  "cheatAdd": {
+    "message": "追加"
   },
   "loginTitle": {
     "message": "ログイン"
@@ -204,7 +264,13 @@
     "message": "ゲームを追加します"
   },
   "addGameDetail": {
-    "message": "创建 Github issue，填写好标题，简介或者玩法，并上传截图（第一张为封面）和 .nes 文件的 zip 压缩包后等待维护者关闭，关闭后游戏将添加到 NESBox。截图和 nes 参考可以在$1<这里>下载"
+    "message": "Create GitHub Issue, fill in the title, Introduction or gameplay, and upload the screenshot (the first one as the cover) and the .nes files of the .zip file, after the closure, the game will be added to NESBox. screenshots and NES references can be downloaded at $1<here> download"
+  },
+  "addComment": {
+    "message": "コメント"
+  },
+  "selfComment": {
+    "message": "私"
   },
   "gameComment": {
     "message": "ユーザーコメント"
@@ -224,14 +290,29 @@
   "placeholderSearch": {
     "message": "$1 ゲームや友達を検索します"
   },
+  "placeholderRoomSearch": {
+    "message": "$1 検索室または友達"
+  },
   "placeholderSearchPlaying": {
     "message": "$1 ゲームを変更するか、友達を招待します"
+  },
+  "tipKeybindingExist": {
+    "message": "このキーはバインディングを繰り返しました"
+  },
+  "tipCheatCodeExist": {
+    "message": "コードはすでに存在します"
+  },
+  "tipCheatCodeFormatErr": {
+    "message": "コード形式エラー"
   },
   "tipRoomCrowded": {
     "message": "部屋にはあまりにも多くの人がいます"
   },
   "tipChangePassword": {
     "message": "パスワードが更新されました"
+  },
+  "tipApplyFriendSuccess": {
+    "message": "リクエストが送信されました"
   },
   "tipIviteSuccess": {
     "message": "招待状が送信されました"
@@ -250,6 +331,12 @@
   },
   "tipGameStateLoad": {
     "message": "$1の読み込みに成功しました"
+  },
+  "tipHostSetting": {
+    "message": "変更オプションは、ホストにのみ有効です"
+  },
+  "tipScreenshotSaved": {
+    "message": "スクリーンショットを保存しました"
   },
   "code404001": { "message": "ユーザーが存在します" },
   "code404002": { "message": "ユーザーネームまたはパスワードが違います" },

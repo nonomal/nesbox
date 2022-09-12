@@ -17,6 +17,7 @@ export type Room = ElementOf<GetRoomsQuery['rooms']>;
 export type Invite = ElementOf<GetFriendsQuery['invites']>;
 export type Friend = ElementOf<GetFriendsQuery['friends']>;
 export type Comment = ElementOf<GetCommentsQuery['comments']>;
+export type GameRecord = GetCommentsQuery['record'];
 export type Message = ElementOf<GetMessagesQuery['messages']>;
 
 interface Store {
@@ -30,8 +31,10 @@ interface Store {
       }
     | undefined
   >;
+  record: Record<number, GameRecord | undefined>;
   topGameIds?: number[];
   favoriteIds?: number[];
+  recentGames?: number[];
   rooms: Record<number, Room | undefined>;
   roomIds?: number[];
 }
@@ -42,9 +45,11 @@ export const [store] = createCacheStore<Store>(
     games: {},
     comment: {},
     rooms: {},
+    record: {},
   },
   {
-    prefix: configure.user!.username,
+    prefix: () => configure.user?.username,
+    depStore: configure,
     cacheExcludeKeys: ['roomIds', 'rooms'],
   },
 );
@@ -57,6 +62,8 @@ interface FriendStore {
   inviteIds?: number[];
   friends: Record<number, Friend | undefined>;
   friendIds?: number[];
+  recentFriendChat?: number;
+  friendChatState?: number;
 }
 
 export const [friendStore] = createCacheStore<FriendStore>(
@@ -68,9 +75,24 @@ export const [friendStore] = createCacheStore<FriendStore>(
     invites: {},
     friends: {},
   },
-  { prefix: configure.user!.username },
+  {
+    prefix: () => configure.user?.username,
+    depStore: configure,
+  },
 );
 
 export function changeFriendChatDraft(friendId: number, body?: string) {
   updateStore(friendStore, { draft: { ...friendStore.draft, [friendId]: body } });
 }
+
+export const toggleFriendChatState = async (id?: number) => {
+  if (id && id === friendStore.friendChatState) {
+    // re-focus on friend chat
+    updateStore(friendStore, { friendChatState: undefined });
+    await Promise.resolve();
+  }
+  updateStore(friendStore, {
+    recentFriendChat: id || friendStore.friendChatState || friendStore.recentFriendChat,
+    friendChatState: id,
+  });
+};

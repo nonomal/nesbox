@@ -11,6 +11,12 @@
   "search": {
     "message": "Search"
   },
+  "unknown": {
+    "message": "Unknown"
+  },
+  "system": {
+    "message": "System"
+  },
   "screencastMode": {
     "message": "Screencast Mode"
   },
@@ -19,9 +25,6 @@
   },
   "feedback": {
     "message": "Feedback"
-  },
-  "discord": {
-    "message": "Play With Friends"
   },
   "changeLanguage": {
     "message": "Language"
@@ -47,14 +50,23 @@
   "deleteFriend": {
     "message": "Delete Friend"
   },
+  "share": {
+    "message": "Share"
+  },
+  "shareDesc": {
+    "message": "Let's play $1 together"
+  },
+  "inviteValidFriend": {
+    "message": "Invite Friend"
+  },
   "inviteFriend": {
     "message": "Invite"
   },
-  "sendTomeInvite": {
-    "message": "Receive Invitation"
+  "sendToMeInvite": {
+    "message": "$1 invite"
   },
   "playing": {
-    "message": "Plaging《$1》"
+    "message": "Playing《$1》"
   },
   "notPlaying": {
     "message": "Rest"
@@ -96,16 +108,37 @@
     "message": "Non-match new password"
   },
   "keySetting": {
-    "message": "Key Binding"
+    "message": "Joypad"
+  },
+  "keySettingJoypad1": {
+    "message": "Joypad 1 - Keyboard Mapping"
+  },
+  "keySettingJoypad2": {
+    "message": "Joypad 2 - Keyboard Mapping"
   },
   "shortcut": {
     "message": "Shortcut"
   },
+  "shortcutGlobal": {
+    "message": "Global"
+  },
+  "shortcutHost": {
+    "message": "Host"
+  },
+  "shortcutReadMsg": {
+    "message": "Open Unread Message"
+  },
   "shortcutSearch": {
     "message": "Search"
   },
+  "shortcutHelp": {
+    "message": "Help"
+  },
   "shortcutSettings": {
     "message": "Settings"
+  },
+  "shortcutScreenshot": {
+    "message": "Screenshot"
   },
   "shortcutSave": {
     "message": "Save State"
@@ -113,11 +146,20 @@
   "shortcutLoad": {
     "message": "Load State"
   },
+  "shortcutOpenRam": {
+    "message": "RAM Viewer"
+  },
+  "shortcutOpenCheat": {
+    "message": "Cheat Settings"
+  },
   "soundSetting": {
     "message": "Sound"
   },
   "volumeSetting": {
     "message": "Volume"
+  },
+  "hintVolume": {
+    "message": "Hint"
   },
   "notificationVolume": {
     "message": "Notification"
@@ -129,7 +171,7 @@
     "message": "Video"
   },
   "videoRender": {
-    "message": "Render method"
+    "message": "Render Mode"
   },
   "videoRenderPixelated": {
     "message": "Pixelated"
@@ -145,6 +187,24 @@
   },
   "license": {
     "message": "License"
+  },
+  "cheatSettingsTitle": {
+    "message": "Cheat Settings ($1)"
+  },
+  "cheatCode": {
+    "message": "Code"
+  },
+  "cheatComment": {
+    "message": "Comment"
+  },
+  "cheatEnable": {
+    "message": "Enable"
+  },
+  "cheatToggleKey": {
+    "message": "Toggle Key"
+  },
+  "cheatAdd": {
+    "message": "Add"
   },
   "loginTitle": {
     "message": "Login"
@@ -180,7 +240,7 @@
     "message": "Rooms"
   },
   "roomTitle": {
-    "message": "Plaging"
+    "message": "Playing"
   },
   "leaveRoom": {
     "message": "Leave Room"
@@ -206,6 +266,12 @@
   "addGameDetail": {
     "message": "Create GitHub Issue, fill in the title, Introduction or gameplay, and upload the screenshot (the first one as the cover) and the .nes files of the .zip file, after the closure, the game will be added to NESBox. screenshots and NES references can be downloaded at $1<here> download"
   },
+  "addComment": {
+    "message": "Add Comment"
+  },
+  "selfComment": {
+    "message": "Me"
+  },
   "gameComment": {
     "message": "Comment"
   },
@@ -224,14 +290,29 @@
   "placeholderSearch": {
     "message": "$1 Search game or friends"
   },
+  "placeholderRoomSearch": {
+    "message": "$1 Search room or friends"
+  },
   "placeholderSearchPlaying": {
     "message": "$1 Change game or invite friends"
+  },
+  "tipKeybindingExist": {
+    "message": "This key has duplicate binding"
+  },
+  "tipCheatCodeExist": {
+    "message": "Code already exists"
+  },
+  "tipCheatCodeFormatErr": {
+    "message": "Code format error"
   },
   "tipRoomCrowded": {
     "message": "Room crowded"
   },
   "tipChangePassword": {
     "message": "Password has been updated"
+  },
+  "tipApplyFriendSuccess": {
+    "message": "Request has been sent"
   },
   "tipIviteSuccess": {
     "message": "Invitation has been sent"
@@ -250,6 +331,12 @@
   },
   "tipGameStateLoad": {
     "message": "Loading $1 succeeded"
+  },
+  "tipHostSetting": {
+    "message": "The change option is only effective for the host"
+  },
+  "tipScreenshotSaved": {
+    "message": "Screenshot Saved"
   },
   "code404001": { "message": "Users exist" },
   "code404002": { "message": "Incorrect username or password" },

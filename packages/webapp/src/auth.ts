@@ -11,20 +11,15 @@ export const gotoRedirectUri = () => {
     const { pathname, search } = new URL(String(url));
     history.replace({ path: pathname, query: search });
   } catch {
-    history.replace({ path: createPath(routes.home) });
+    history.replace({ path: createPath(routes.games) });
   }
 };
 
-export const logout = (replaceState = false) => {
+export const logout = () => {
   deleteUser();
   const path = createPath(routes.login);
   const query = new QueryString({ [queryKeys.REDIRECT_URI]: window.location.href });
-  if (replaceState) {
-    history.replace({ path, query });
-  } else {
-    // reload store
-    window.location.replace(`${path}${query}`);
-  }
+  history.replace({ path, query });
 };
 
 export const isExpiredProfile = (profile: Profile) => {

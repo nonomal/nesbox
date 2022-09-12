@@ -63,9 +63,14 @@ import {
   ScNewRoom,
   ScUpdatePassword,
   ScUpdateRoom,
+  ScUpdateRoomScreenshot,
+  ScVoiceMsgKind,
   SendSignal,
   SendSignalMutation,
   SendSignalMutationVariables,
+  SendVoiceMsg,
+  SendVoiceMsgQuery,
+  SendVoiceMsgQueryVariables,
   UpdateAccount,
   UpdateAccountMutation,
   UpdateAccountMutationVariables,
@@ -75,17 +80,35 @@ import {
   UpdateRoom,
   UpdateRoomMutation,
   UpdateRoomMutationVariables,
+  UpdateRoomScreenshot,
+  UpdateRoomScreenshotMutation,
+  UpdateRoomScreenshotMutationVariables,
 } from 'src/generated/graphql';
 import { store, friendStore } from 'src/store';
 import { request, subscribe } from 'src/services';
 import { configure, parseAccount, Settings } from 'src/configure';
-import { events, Singal, SingalEvent } from 'src/constants';
+import { events, VoiceSingalEvent, Singal, SingalEvent } from 'src/constants';
 import { i18n, isCurrentLang } from 'src/i18n';
 import { logout } from 'src/auth';
-import { documentVisible, playSound } from 'src/utils';
+import {
+  convertObjectCamelCaseToSnake,
+  convertObjectSnakeToCamelCase,
+  documentVisible,
+  playHintSound,
+  playSound,
+} from 'src/utils';
 
-export const getGames = async () => {
-  const { games, topGames, favorites } = await request<GetGamesQuery, GetGamesQueryVariables>(GetGames, {});
+export const sendVoiceMsg = async (kind: ScVoiceMsgKind, payload: RTCSessionDescription | RTCIceCandidate) => {
+  await request<SendVoiceMsgQuery, SendVoiceMsgQueryVariables>(SendVoiceMsg, {
+    input: { json: JSON.stringify(convertObjectCamelCaseToSnake(JSON.parse(JSON.stringify(payload)))), kind },
+  });
+};
+
+export const getGames = debounce(async () => {
+  const { games, topGames, favorites, recentGames } = await request<GetGamesQuery, GetGamesQueryVariables>(
+    GetGames,
+    {},
+  );
   const gameIds = games
     .map((e) => {
       store.games[e.id] = e;
@@ -96,16 +119,20 @@ export const getGames = async () => {
     gameIds,
     favoriteIds: favorites.filter((id) => isCurrentLang(store.games[id]!)),
     topGameIds: [...new Set([...topGames, ...gameIds])].filter((id) => isCurrentLang(store.games[id]!)).splice(0, 5),
+    recentGames,
   });
-};
+});
 
 export const getRooms = async () => {
   const { rooms } = await request<GetRoomsQuery, GetRoomsQueryVariables>(GetRooms, {});
+  if (!store.gameIds?.length) await getGames();
   updateStore(store, {
-    roomIds: rooms.map((e) => {
-      store.rooms[e.id] = e;
-      return e.id;
-    }),
+    roomIds: rooms
+      .filter(({ gameId }) => gameId in store.games && isCurrentLang(store.games[gameId]!))
+      .map((e) => {
+        store.rooms[e.id] = e;
+        return e.id;
+      }),
   });
 };
 
@@ -119,6 +146,18 @@ export const updateRoom = async (input: ScUpdateRoom) => {
   const { updateRoom } = await request<UpdateRoomMutation, UpdateRoomMutationVariables>(UpdateRoom, { input });
   configure.user!.playing = updateRoom;
   updateStore(configure);
+};
+
+export const updateRoomScreenshot = async (input: ScUpdateRoomScreenshot) => {
+  request<UpdateRoomScreenshotMutation, UpdateRoomScreenshotMutationVariables>(
+    UpdateRoomScreenshot,
+    {
+      input,
+    },
+    {
+      ignoreError: true,
+    },
+  );
 };
 
 export const enterPubRoom = async (roomId: number) => {
@@ -179,6 +218,7 @@ export const getFriends = async () => {
 
 export const applyFriend = async (username: string) => {
   await request<ApplyFriendMutation, ApplyFriendMutationVariables>(ApplyFriend, { input: { username } });
+  Toast.open('success', i18n.get('tipApplyFriendSuccess'));
 };
 
 export const acceptFriend = async (targetId: number, accept: boolean) => {
@@ -187,6 +227,7 @@ export const acceptFriend = async (targetId: number, accept: boolean) => {
     friendStore.friends[targetId] = { ...friendStore.friends[targetId]!, status: ScFriendStatus.Accept };
   } else {
     friendStore.friendIds = friendStore.friendIds?.filter((id) => id !== targetId);
+    delete friendStore.friends[targetId];
   }
   updateStore(friendStore);
 };
@@ -202,6 +243,7 @@ export const deleteFriend = async (targetId: number) => {
 
 export const createInvite = async (input: ScNewInvite) => {
   await request<CreateInviteMutation, CreateInviteMutationVariables>(CreateInvite, { input });
+  Toast.open('success', i18n.get('tipIviteSuccess'));
 };
 
 export const acceptInvite = async (inviteId: number, accept: boolean) => {
@@ -216,7 +258,8 @@ export const acceptInvite = async (inviteId: number, accept: boolean) => {
 };
 
 export const getComments = async (gameId: number) => {
-  const { comments } = await request<GetCommentsQuery, GetCommentsQueryVariables>(GetComments, { input: { gameId } });
+  const { comments, record } = await request<GetCommentsQuery, GetCommentsQueryVariables>(GetComments, { gameId });
+  store.record[gameId] = record;
   store.comment[gameId] = {
     userIds: comments.map((e) => e.user.id),
     comments: Object.fromEntries(comments.map((e) => [e.user.id, e])),
@@ -265,6 +308,7 @@ export const createMessage = async (targetId: number, body: string) => {
   friendStore.messageIds[targetId] = [...(friendStore.messageIds[targetId] || []), createMessage.id];
   friendStore.messages[createMessage.id] = createMessage;
   updateStore(friendStore);
+  playHintSound('sended');
 };
 
 export const favoriteGame = async (gameId: number, favorite: boolean) => {
@@ -275,7 +319,7 @@ export const favoriteGame = async (gameId: number, favorite: boolean) => {
     },
   });
   if (favorite) {
-    store.favoriteIds = [...(store.favoriteIds || []), gameId];
+    store.favoriteIds = [gameId, ...(store.favoriteIds || [])];
   } else {
     store.favoriteIds = store.favoriteIds?.filter((id) => id !== gameId);
   }
@@ -305,13 +349,14 @@ export const subscribeEvent = () => {
         updateUser,
         sendSignal,
         login,
+        voiceSignal,
       } = event;
 
       if (newMessage) {
         friendStore.messages[newMessage.id] = newMessage;
         const userId = newMessage.userId === configure.user?.id ? newMessage.targetId : newMessage.userId;
         friendStore.messageIds[userId] = [...(friendStore.messageIds[userId] || []), newMessage.id];
-        if (configure.friendChatState !== newMessage.userId) {
+        if (friendStore.friendChatState !== newMessage.userId) {
           const friend = friendStore.friends[newMessage.userId];
           if (friend) {
             friendStore.friends[newMessage.userId] = {
@@ -319,11 +364,12 @@ export const subscribeEvent = () => {
               unreadMessageCount: friend.unreadMessageCount + 1,
             };
           }
+          playSound('new_message');
         } else {
           documentVisible().then(() => readMessage(newMessage.userId));
+          playHintSound('received');
         }
         updateStore(friendStore);
-        playSound('new_message');
       }
 
       if (newGame) {
@@ -375,7 +421,7 @@ export const subscribeEvent = () => {
       if (applyFriend) {
         friendStore.friends[applyFriend.user.id] = applyFriend;
         updateStore(friendStore, {
-          friendIds: [...(friendStore.friendIds || []), applyFriend.user.id],
+          friendIds: [...new Set([...(friendStore.friendIds || []), applyFriend.user.id])],
         });
         playSound('apply_friend');
       }
@@ -383,7 +429,7 @@ export const subscribeEvent = () => {
       if (acceptFriend) {
         friendStore.friends[acceptFriend.user.id] = acceptFriend;
         updateStore(friendStore, {
-          friendIds: [...(friendStore.friendIds || []), acceptFriend.user.id],
+          friendIds: [...new Set([...(friendStore.friendIds || []), acceptFriend.user.id])],
         });
       }
 
@@ -409,6 +455,17 @@ export const subscribeEvent = () => {
         window.dispatchEvent(
           new CustomEvent<SingalEvent>(events.SINGAL, {
             detail: { userId: sendSignal.userId, singal: JSON.parse(sendSignal.json) },
+          }),
+        );
+      }
+
+      if (voiceSignal) {
+        window.dispatchEvent(
+          new CustomEvent<VoiceSingalEvent>(events.VOICE_SINGAL, {
+            detail: {
+              roomId: voiceSignal.roomId,
+              singal: convertObjectSnakeToCamelCase(JSON.parse(voiceSignal.json)),
+            },
           }),
         );
       }

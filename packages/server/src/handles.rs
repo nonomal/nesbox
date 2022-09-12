@@ -9,7 +9,7 @@ use std::time::Duration;
 
 use crate::{
     auth::{extract_token_from_req, extract_token_from_str, UserToken},
-    db::root::Pool,
+    db::root::DB_POOL,
     github::{get_sc_new_game, validate, GithubPayload},
     schemas::root::{Context, GuestContext, GuestSchema, Schema},
     schemas::{
@@ -52,7 +52,7 @@ pub async fn graphql(
     secret: web::Data<String>,
     data: web::Json<GraphQLRequest>,
 ) -> impl Responder {
-    let user_id = match UserToken::parse(&secret, extract_token_from_req(&req)) {
+    let user_id = match UserToken::parse(&secret, &extract_token_from_req(&req)) {
         Some(id) => id,
         None => return HttpResponse::Unauthorized().finish(),
     };
@@ -99,7 +99,6 @@ pub async fn webhook(
     req: HttpRequest,
     body: web::Bytes,
     secret: web::Data<String>,
-    pool: web::Data<Pool>,
 ) -> impl Responder {
     let payload: GithubPayload = serde_json::from_slice(&body).unwrap();
 
@@ -109,7 +108,7 @@ pub async fn webhook(
         return HttpResponse::Unauthorized().finish();
     }
 
-    let conn = &pool.get_ref().get().unwrap();
+    let conn = DB_POOL.get().unwrap();
 
     match payload.action.as_str() {
         "closed" => {
@@ -117,12 +116,12 @@ pub async fn webhook(
             if sc_game.rom.is_empty() {
                 log::debug!("Not rom");
             } else {
-                match get_game_from_name(conn, &sc_game.name) {
+                match get_game_from_name(&conn, &sc_game.name) {
                     Some(game) => {
-                        update_game(conn, game.id, &sc_game).ok();
+                        update_game(&conn, game.id, &sc_game).ok();
                     }
                     None => {
-                        if let Ok(game) = create_game(conn, &sc_game) {
+                        if let Ok(game) = create_game(&conn, &sc_game) {
                             notify_all(
                                 ScNotifyMessageBuilder::default()
                                     .new_game(game)

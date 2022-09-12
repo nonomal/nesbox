@@ -3,20 +3,18 @@
     windows_subsystem = "windows"
 )]
 
-#[cfg(target_os = "windows")]
-use window_shadows::set_shadow;
-
 #[cfg(target_os = "macos")]
 #[macro_use]
 extern crate objc;
 
+use std::{env, fs};
+
 #[cfg(target_os = "macos")]
 use tauri::Menu;
-use tauri::{generate_handler, Manager, Window, WindowEvent};
-#[cfg(target_os = "macos")]
-use window_ext::WindowExt;
+use tauri::{api::path::app_dir, generate_handler, Window, WindowEvent};
 
 use handler::{play_sound, set_badge};
+use tauri_plugin_window_state::STATE_FILENAME;
 
 mod handler;
 mod preload;
@@ -26,37 +24,56 @@ fn main() {
     let builder = tauri::Builder::default();
     let context = tauri::generate_context!();
 
+    if env::var("NEW_STATE").is_ok() {
+        fs::remove_file(app_dir(context.config()).unwrap().join(STATE_FILENAME)).ok();
+    }
+
     #[cfg(target_os = "macos")]
     let builder = builder.menu(Menu::os_default(&context.package_info().name));
 
-    builder
-        .setup(|app| {
-            let main_window = app.get_window("main").unwrap();
-            #[cfg(target_os = "windows")]
-            {
-                main_window.set_decorations(false).ok();
-                set_shadow(&main_window, true).ok();
-            }
-            #[cfg(target_os = "macos")]
-            {
-                main_window.set_window_style(true, false);
-            }
+    #[cfg(target_os = "windows")]
+    let builder = builder.setup(|app| {
+        use tauri::Manager;
+        // windows main window create not trigger in `on_window_event`
+        let main_window = app.get_window("main").unwrap();
+        use window_ext::WindowExt;
+        main_window.set_background();
+        main_window.set_transparent_titlebar();
+        Ok(())
+    });
 
-            // main_window.open_devtools();
-            Ok(())
-        })
+    builder
+        .on_page_load(|w: Window, _| w.show().unwrap())
         .on_window_event(|event| match event.event() {
-            #[cfg(target_os = "macos")]
-            WindowEvent::Resized(size) => {
-                // https://github.com/tauri-apps/tauri/issues/4519
-                let monitor = event.window().current_monitor().unwrap().unwrap();
-                let screen = monitor.size();
-                event.window().set_toolbar_visible(size != screen);
+            WindowEvent::Resized(_) | WindowEvent::Moved(_) => {
+                let window = event.window();
+                #[cfg(any(target_os = "windows", target_os = "macos"))]
+                // created event，new window
+                {
+                    use window_ext::WindowExt;
+                    window.set_background();
+                    window.set_transparent_titlebar();
+                }
+                #[cfg(target_os = "macos")]
+                // fullscreen/resized event
+                // bug: when enter fullscreen emit moved event
+                {
+                    use window_ext::WindowExt;
+                    // https://github.com/tauri-apps/tauri/issues/4519
+                    let monitor = window.current_monitor().unwrap().unwrap();
+                    let screen = monitor.size();
+                    let size = &window.outer_size().unwrap();
+                    event.window().set_toolbar_visible(size != screen);
+                }
             }
             _ => {}
         })
-        .on_page_load(|w: Window, _| w.get_window("main").unwrap().show().unwrap())
         .plugin(preload::PreloadPlugin::new())
+        .plugin(
+            tauri_plugin_window_state::Builder::default()
+                .set_auto_show(false)
+                .build(),
+        )
         .invoke_handler(generate_handler![play_sound, set_badge])
         .run(context)
         .expect("error while running tauri application");

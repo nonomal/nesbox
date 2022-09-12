@@ -1,6 +1,8 @@
 import { updateTheme as updateDuoyunTheme, darkTheme } from 'duoyun-ui/lib/theme';
 import { updateStore } from '@mantou/gem';
 import { createTheme, getThemeStore, updateTheme } from '@mantou/gem/helper/theme';
+import { mediaQuery } from '@mantou/gem/helper/mediaquery';
+import { isMtApp } from 'mt-app';
 
 import { configure } from 'src/configure';
 import { i18n } from 'src/i18n';
@@ -43,6 +45,19 @@ const defaultTheme = {
   popupZIndex: '2147483646',
   timingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)',
   timingEasingFunction: 'cubic-bezier(0.16, 1, 0.29, 0.99)',
+  ...(isMtApp
+    ? {
+        normalRound: '0',
+        smallRound: '0',
+        gridGutter: '1rem',
+      }
+    : mediaQuery.isPhone
+    ? {
+        normalRound: '4px',
+        smallRound: '2px',
+        gridGutter: '16px',
+      }
+    : {}),
 };
 
 const punkTheme = {

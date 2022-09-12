@@ -3,10 +3,11 @@ import type { RouteItem } from 'duoyun-ui/elements/route';
 import { mediaQuery } from '@mantou/gem/helper/mediaquery';
 import { commonHandle } from 'duoyun-ui/lib/hotkeys';
 import { waitLoading } from 'duoyun-ui/elements/wait';
+import { focusStyle } from 'duoyun-ui/lib/styles';
 
 import { locationStore, routes } from 'src/routes';
 import { i18n } from 'src/i18n';
-import { configure, toggoleFriendListState, toggoleSearchState } from 'src/configure';
+import { configure, SearchCommand, setSearchCommand, toggleFriendListState, toggleSearchState } from 'src/configure';
 import { theme } from 'src/theme';
 import { favoriteGame, leaveRoom } from 'src/services/api';
 import { store } from 'src/store';
@@ -16,14 +17,9 @@ import 'duoyun-ui/elements/link';
 import 'duoyun-ui/elements/use';
 import 'duoyun-ui/elements/action-text';
 import 'duoyun-ui/elements/modal';
-import 'src/modules/game-selector';
 import 'src/elements/tooltip';
 import 'src/modules/avatar';
 import 'src/modules/badge';
-
-type State = {
-  select: boolean;
-};
 
 const style = createCSSSheet(css`
   :host {
@@ -54,6 +50,7 @@ const style = createCSSSheet(css`
     line-height: 1.5;
     text-transform: uppercase;
     font-size: 1.125em;
+    white-space: nowrap;
   }
   .link::after {
     content: '';
@@ -89,7 +86,8 @@ const style = createCSSSheet(css`
     .nav {
       gap: 0.5em;
     }
-    .link {
+    .heart,
+    .avatar {
       display: none;
     }
   }
@@ -100,15 +98,13 @@ const style = createCSSSheet(css`
  */
 @customElement('m-nav')
 @adoptedStyle(style)
+@adoptedStyle(focusStyle)
 @connectStore(store)
 @connectStore(locationStore)
 @connectStore(i18n.store)
-export class MNavElement extends GemElement<State> {
+@connectStore(configure)
+export class MNavElement extends GemElement {
   @state room: boolean;
-
-  state: State = {
-    select: false,
-  };
 
   render = () => {
     const playing = configure.user?.playing;
@@ -138,33 +134,21 @@ export class MNavElement extends GemElement<State> {
                         class="title"
                         tabindex="0"
                         @keydown=${commonHandle}
-                        @click=${() => this.setState({ select: true })}
+                        @click=${() => setSearchCommand(SearchCommand.SELECT_GAME)}
                       >
                         ${store.games[gameId || 0]?.name}
                       </dy-action-text>
                     </nesbox-tooltip>
                   `}
               <dy-use
-                class="icon"
+                class="icon heart"
                 tabindex="0"
                 @keydown=${commonHandle}
                 .element=${favorited ? icons.favorited : icons.favorite}
                 @click=${() => favoriteGame(gameId, !favorited)}
               ></dy-use>
-              <dy-modal
-                .open=${this.state.select}
-                .disableDefualtOKBtn=${true}
-                .header=${i18n.get('selectGame')}
-                @close=${() => this.setState({ select: false })}
-                .maskCloseable=${true}
-              >
-                <m-game-selector slot="body"></m-game-selector>
-              </dy-modal>
             `
           : html`
-              <dy-link style="display: contents" href="/">
-                <img class="icon" src="/logo-96.png" />
-              </dy-link>
               <dy-active-link class="link" .route=${routes.games as RouteItem}>${routes.games.title}</dy-active-link>
               <dy-active-link class="link" .route=${routes.favorites as RouteItem}>
                 ${routes.favorites.title}
@@ -177,18 +161,18 @@ export class MNavElement extends GemElement<State> {
           tabindex="0"
           @keydown=${commonHandle}
           .element=${icons.search}
-          @click=${toggoleSearchState}
+          @click=${toggleSearchState}
         ></dy-use>
         <dy-use
           class="icon"
           tabindex="0"
           @keydown=${commonHandle}
           .element=${icons.group}
-          @click=${toggoleFriendListState}
+          @click=${toggleFriendListState}
         >
           <m-badge></m-badge>
         </dy-use>
-        <m-avatar class="icon"></m-avatar>
+        <m-avatar class="icon avatar"></m-avatar>
       </nav>
     `;
   };

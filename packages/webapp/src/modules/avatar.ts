@@ -5,7 +5,7 @@ import { commonHandle } from 'duoyun-ui/lib/hotkeys';
 import { ElementOf, isNotNullish } from 'duoyun-ui/lib/types';
 import { Modal } from 'duoyun-ui/elements/modal';
 
-import { configure, getShortcut, toggoleScreencaseMode, toggoleSettingsState } from 'src/configure';
+import { configure, getShortcut, toggleScreencaseMode, toggleSettingsState } from 'src/configure';
 import { logout } from 'src/auth';
 import { changeTheme, theme, ThemeName, themeNames } from 'src/theme';
 import { i18n, isCurrentLang, langNames } from 'src/i18n';
@@ -13,13 +13,18 @@ import { icons } from 'src/icons';
 import { getAvatar, getCDNSrc, getGithubGames } from 'src/utils';
 import { store } from 'src/store';
 import { githubIssue, githubRelease } from 'src/constants';
+import { logger } from 'src/logger';
+import { routes } from 'src/routes';
 
+import 'duoyun-ui/elements/coach-mark';
+import 'duoyun-ui/elements/route';
 import 'duoyun-ui/elements/avatar';
 import 'duoyun-ui/elements/options';
 import 'duoyun-ui/elements/use';
 
 const style = createCSSSheet(css`
   :host {
+    position: relative;
     aspect-ratio: 1;
     cursor: pointer;
     display: flex;
@@ -65,7 +70,7 @@ export class MAvatarElement extends GemElement {
 
     await Modal.confirm(html`<dy-paragraph style="width:min(400px, 100vw)"> ${tip} </dy-paragraph>`);
 
-    const excludeGames = ['马力欧兄弟/水管马力欧', '忍者神龟 街机版', 'Mighty 快打旋风'];
+    const excludeGames = ['马力欧兄弟/水管马力欧', '忍者神龟 街机版', 'Mighty 快打旋风', 'Super C'];
     const list: { title: string; description: string }[] = (
       await waitLoading((await fetch(getCDNSrc(`${githubRelease}/download/0.0.1/matedata.json`))).json())
     )
@@ -78,6 +83,7 @@ export class MAvatarElement extends GemElement {
       if (!item) return;
       const links = await getGithubGames(item.title);
       const link = links.find((e) => e.textContent === item.title);
+      if (link) logger.info('Game exist:', link.textContent);
       return link ? await find(ls.slice(index, ls.length)) : item;
     };
     const item = await waitLoading(find(list));
@@ -99,7 +105,7 @@ export class MAvatarElement extends GemElement {
       [
         {
           text: i18n.get('setting'),
-          handle: toggoleSettingsState,
+          handle: toggleSettingsState,
           tag: getShortcut('OPEN_SETTINGS', true),
         },
         {
@@ -121,19 +127,14 @@ export class MAvatarElement extends GemElement {
         {
           text: i18n.get('screencastMode'),
           selected: configure.screencastMode,
-          handle: toggoleScreencaseMode,
-        },
-        {
-          text: i18n.get('discord'),
-          tag: html`<dy-use .element=${icons.openNewWindow} style="width: 1.2em"></dy-use>`,
-          handle: () => {
-            open('https://discord.gg/hY6XkHwc');
-          },
+          handle: toggleScreencaseMode,
         },
         {
           text: i18n.get('feedback'),
           tag: html`<dy-use .element=${icons.openNewWindow} style="width: 1.2em"></dy-use>`,
-          handle: () => open(githubIssue),
+          handle: () => {
+            open(githubIssue);
+          },
         },
         {
           text: i18n.get('addGame'),
@@ -154,6 +155,16 @@ export class MAvatarElement extends GemElement {
   };
 
   render = () => {
-    return html` <dy-avatar class="avatar" src=${getAvatar(configure.user?.username)}></dy-avatar> `;
+    return html`
+      <dy-avatar class="avatar" src=${getAvatar(configure.user?.username)}></dy-avatar>
+      <dy-route
+        .routes=${[
+          {
+            pattern: routes.room.pattern,
+            content: html`<dy-coach-mark index="0"></dy-coach-mark>`,
+          },
+        ]}
+      ></dy-route>
+    `;
   };
 }

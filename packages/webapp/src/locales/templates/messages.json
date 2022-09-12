@@ -6,10 +6,16 @@
     "message": "NESBox"
   },
   "sloganDesc": {
-    "message": "隔壁班的那個女孩\n怎麼還沒經過我的窗前\n嘴裏的零食手裏的漫畫\n心裏初戀的童年\n......"
+    "message": "隔壁班的那个女孩\n怎么还没经过我的窗前\n嘴里的零食手里的漫画\n心中初恋的童年\n......"
   },
   "search": {
     "message": "搜索"
+  },
+  "unknown": {
+    "message": "未知"
+  },
+  "system": {
+    "message": "系统"
   },
   "screencastMode": {
     "message": "截屏模式"
@@ -19,9 +25,6 @@
   },
   "feedback": {
     "message": "问题反馈"
-  },
-  "discord": {
-    "message": "语音开黑"
   },
   "changeLanguage": {
     "message": "切换语言"
@@ -47,11 +50,20 @@
   "deleteFriend": {
     "message": "删除好友"
   },
+  "share": {
+    "message": "分享"
+  },
+  "shareDesc": {
+    "message": "一起來玩 $1"
+  },
+  "inviteValidFriend": {
+    "message": "邀请好友"
+  },
   "inviteFriend": {
     "message": "邀请"
   },
-  "sendTomeInvite": {
-    "message": "发来邀请"
+  "sendToMeInvite": {
+    "message": "$1 发来邀请"
   },
   "playing": {
     "message": "正在玩《$1》"
@@ -66,7 +78,7 @@
     "message": "未找到页面"
   },
   "notFoundDetail": {
-    "message": "您访问的页面没有找到，$1<点击>返回首页"
+    "message": "访问的页面没有找到，$1<点击>返回首页"
   },
   "notDataTitle": {
     "message": "暂无数据"
@@ -96,16 +108,37 @@
     "message": "不匹配新密码"
   },
   "keySetting": {
-    "message": "按键"
+    "message": "手柄"
+  },
+  "keySettingJoypad1": {
+    "message": "手柄 1 - 键盘映射"
+  },
+  "keySettingJoypad2": {
+    "message": "手柄 2 - 键盘映射"
   },
   "shortcut": {
     "message": "快捷键"
   },
+  "shortcutGlobal": {
+    "message": "全局"
+  },
+  "shortcutHost": {
+    "message": "主机"
+  },
+  "shortcutReadMsg": {
+    "message": "打开未读消息"
+  },
   "shortcutSearch": {
     "message": "搜索"
   },
+  "shortcutHelp": {
+    "message": "帮助"
+  },
   "shortcutSettings": {
     "message": "设置"
+  },
+  "shortcutScreenshot": {
+    "message": "截图"
   },
   "shortcutSave": {
     "message": "保存状态"
@@ -113,11 +146,20 @@
   "shortcutLoad": {
     "message": "加载状态"
   },
+  "shortcutOpenRam": {
+    "message": "RAM 查看器"
+  },
+  "shortcutOpenCheat": {
+    "message": "金手指"
+  },
   "soundSetting": {
     "message": "声音"
   },
   "volumeSetting": {
     "message": "音量"
+  },
+  "hintVolume": {
+    "message": "提示"
   },
   "notificationVolume": {
     "message": "通知"
@@ -145,6 +187,24 @@
   },
   "license": {
     "message": "许可证"
+  },
+  "cheatSettingsTitle": {
+    "message": "金手指（$1）"
+  },
+  "cheatCode": {
+    "message": "Code"
+  },
+  "cheatComment": {
+    "message": "备注"
+  },
+  "cheatEnable": {
+    "message": "启用"
+  },
+  "cheatToggleKey": {
+    "message": "键绑定"
+  },
+  "cheatAdd": {
+    "message": "添加"
   },
   "loginTitle": {
     "message": "登录"
@@ -204,10 +264,16 @@
     "message": "添加游戏"
   },
   "addGameDetail": {
-    "message": "创建 Github issue，填写好标题，简介或者玩法，并上传截图（第一张为封面）和 .nes 文件的 zip 压缩包后等待维护者关闭，关闭后游戏将添加到 NESBox。截图和 nes 参考可以在$1<这里>下载"
+    "message": "创建 Github issue，填写好标题，简介或者玩法，并上传截图（第一张为封面）和 .nes 文件的 zip 压缩包后等待维护者处理，处理后游戏将添加到 NESBox。截图和 nes 参考可以在$1<这里>下载"
   },
   "gameComment": {
     "message": "用户评论"
+  },
+  "addComment": {
+    "message": "编写评论"
+  },
+  "selfComment": {
+    "message": "我"
   },
   "noneComment": {
     "message": "没有评论"
@@ -224,14 +290,29 @@
   "placeholderSearch": {
     "message": "$1 搜索游戏或者好友"
   },
+  "placeholderRoomSearch": {
+    "message": "$1 搜索房间或者好友"
+  },
   "placeholderSearchPlaying": {
     "message": "$1 更改游戏或者邀请好友"
+  },
+  "tipKeybindingExist": {
+    "message": "该键存在重复绑定"
+  },
+  "tipCheatCodeExist": {
+    "message": "Code 已经存在"
+  },
+  "tipCheatCodeFormatErr": {
+    "message": "Code 格式错误"
   },
   "tipRoomCrowded": {
     "message": "房间人数过多"
   },
   "tipChangePassword": {
     "message": "修改密码成功"
+  },
+  "tipApplyFriendSuccess": {
+    "message": "请求已经发送"
   },
   "tipIviteSuccess": {
     "message": "邀请已经发送"
@@ -250,6 +331,12 @@
   },
   "tipGameStateLoad": {
     "message": "加载$1成功"
+  },
+  "tipHostSetting": {
+    "message": "改选项只对主机有效"
+  },
+  "tipScreenshotSaved": {
+    "message": "截图已保存到桌面"
   },
   "code404001": { "message": "用户已存在" },
   "code404002": { "message": "账号或密码错误" },

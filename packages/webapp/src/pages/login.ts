@@ -17,11 +17,12 @@ import { mediaQuery } from '@mantou/gem/helper/mediaquery';
 import { hotkeys } from 'duoyun-ui/lib/hotkeys';
 
 import { theme } from 'src/theme';
-import { gotoRedirectUri } from 'src/auth';
+import { gotoRedirectUri, isExpiredProfile } from 'src/auth';
 import { i18n } from 'src/i18n';
 import { routes } from 'src/routes';
 import { login, register } from 'src/services/guest-api';
 import { getCDNSrc } from 'src/utils';
+import { configure } from 'src/configure';
 
 import 'duoyun-ui/elements/form';
 import 'duoyun-ui/elements/link';
@@ -52,6 +53,7 @@ const style = createCSSSheet(css`
     font-size: 0.75em;
   }
   .slogan {
+    min-width: 0;
     flex-grow: 1;
     display: flex;
     padding-inline: 10vw;
@@ -67,17 +69,18 @@ const style = createCSSSheet(css`
     border-radius: ${theme.smallRound};
   }
   .slogan h1 {
-    font-size: 2.7em;
+    font-size: min(2.7em, 8vh);
     font-weight: bold;
-    margin-block: -2em 0.3em;
+    margin-block: -5vh 0.3em;
     padding-inline: 0.2em;
   }
   .slogan p {
     font-style: italic;
-    font-size: 1.6em;
+    font-size: min(1.6em, 5vh);
     line-height: 1.5;
     padding-inline: 0.2em 0.4em;
     margin-block-end: 4px;
+    white-space: nowrap;
   }
   .content {
     display: flex;
@@ -86,11 +89,13 @@ const style = createCSSSheet(css`
     justify-content: center;
     padding: 2em 1.6em;
     background: ${theme.backgroundColor};
-    width: 22em;
+    width: min(22em, 40vw);
+    flex-shrink: 0;
     box-sizing: border-box;
   }
   .header {
-    margin-block: -10vh 1.2em;
+    font-size: min(2.7em, 8vh);
+    margin-block: -5vh 1.2em;
   }
   .send {
     flex-grow: 0;
@@ -99,7 +104,7 @@ const style = createCSSSheet(css`
   .actions {
     display: flex;
     flex-direction: row-reverse;
-    margin-block: 3em 1em;
+    margin-block: min(3em, 5vh) 1em;
     gap: 1em;
     align-items: center;
   }
@@ -107,6 +112,9 @@ const style = createCSSSheet(css`
     font-size: 1em;
   }
   @media ${mediaQuery.PHONE} {
+    :host {
+      background: none;
+    }
     .bg-copyright,
     .slogan {
       display: none;
@@ -155,6 +163,12 @@ export class PLoginElement extends GemElement<State> {
       await login({ username, password });
     }
     gotoRedirectUri();
+  };
+
+  mounted = () => {
+    if (configure.profile && !isExpiredProfile(configure.profile)) {
+      gotoRedirectUri();
+    }
   };
 
   render = () => {

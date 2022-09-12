@@ -49,6 +49,7 @@ const style = createCSSSheet(css`
     max-height: calc(100% - 6em);
     object-fit: cover;
     border-radius: calc(2 * ${theme.normalRound});
+    box-shadow: 0 0 0 0.5px ${theme.borderColor};
   }
   .list {
     padding-inline: ${theme.gridGutter};
@@ -58,10 +59,12 @@ const style = createCSSSheet(css`
       aspect-ratio: 2/1;
     }
     .top::part(img) {
+      --mask-range: 120%;
       inset: 0;
       width: 100%;
       max-width: none;
       max-height: 100%;
+      border-radius: 0;
     }
     .top::part(title) {
       text-shadow: 0 0.1em 0.3em rgba(0, 0, 0, ${theme.maskAlpha});
@@ -94,6 +97,9 @@ type State = {
   background: string;
 };
 
+/**
+ * @customElement p-games
+ */
 @customElement('p-games')
 @adoptedStyle(style)
 @connectStore(i18n.store)
@@ -105,6 +111,7 @@ export class PGamesElement extends GemElement<State> {
 
   #onTopChange = async (index: number, length = 5) => {
     // primaryColor 对比色
+    if (mediaQuery.isPhone) return;
     const [hux] = rgbToHsl(parseHexColor(themeStore.primaryColor as HexColor));
     const blockRange = 0.4;
     this.setState({

@@ -5,6 +5,18 @@ import { Time } from 'duoyun-ui/lib/time';
 import { configure } from 'src/configure';
 import { githubIssue } from 'src/constants';
 
+export function convertObjectSnakeToCamelCase(obj: Record<string, any>) {
+  return Object.fromEntries(
+    Object.entries(obj).map(([key, val]) => [key.replace(/_(.)/g, (_substr, $1: string) => $1.toUpperCase()), val]),
+  );
+}
+
+export function convertObjectCamelCaseToSnake(obj: Record<string, any>) {
+  return Object.fromEntries(
+    Object.entries(obj).map(([key, val]) => [key.replace(/[A-Z]{1,2}/g, ($1: string) => '_' + $1.toLowerCase()), val]),
+  );
+}
+
 export const getCorSrc = (url: string) => {
   return `https://files.xianqiao.wang/${url}`;
 };
@@ -46,6 +58,28 @@ export const playSound = (kind: string, volume = configure.user?.settings.volume
     .catch(() => {
       //
     });
+};
+
+export const saveFile = async (file: File) => {
+  try {
+    if (!window.__TAURI__) throw new Error();
+    const { writeBinaryFile, BaseDirectory } = window.__TAURI__.fs;
+    await writeBinaryFile(file.name, new Uint8Array(await file.arrayBuffer()), { dir: BaseDirectory.Desktop });
+    return BaseDirectory.Desktop;
+  } catch {
+    const a = document.createElement('a');
+    a.download = file.name;
+    a.href = URL.createObjectURL(file);
+    document.body.append(a);
+    a.click();
+    a.remove();
+    addEventListener('focus', () => setTimeout(() => URL.revokeObjectURL(a.href), 1000), { once: true });
+    return undefined;
+  }
+};
+
+export const playHintSound = (kind: string) => {
+  playSound(kind, configure.user!.settings.volume.hint);
 };
 
 export const formatTime = (timestamp: number) => {

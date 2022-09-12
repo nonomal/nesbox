@@ -4,10 +4,11 @@ import { commonHandle } from 'duoyun-ui/lib/hotkeys';
 import { ContextMenu } from 'duoyun-ui/elements/menu';
 import type { GemUseElement } from '@mantou/gem/elements/use';
 import { waitLoading } from 'duoyun-ui/elements/wait';
+import { focusStyle } from 'duoyun-ui/lib/styles';
 
 import { i18n, langNames } from 'src/i18n';
 import { ThemeName, themeNames, changeTheme, theme } from 'src/theme';
-import { configure, toggoleScreencaseMode } from 'src/configure';
+import { configure, toggleScreencaseMode } from 'src/configure';
 
 import 'duoyun-ui/elements/input-capture';
 import 'duoyun-ui/elements/use';
@@ -31,6 +32,7 @@ const style = createCSSSheet(css`
  */
 @customElement('m-guest')
 @adoptedStyle(style)
+@adoptedStyle(focusStyle)
 @connectStore(configure)
 export class ModuleGuestElement extends GemElement {
   #openMenu = ({ target }: MouseEvent) => {
@@ -56,7 +58,7 @@ export class ModuleGuestElement extends GemElement {
         {
           text: i18n.get('screencastMode'),
           selected: configure.screencastMode,
-          handle: toggoleScreencaseMode,
+          handle: toggleScreencaseMode,
         },
       ],
       {

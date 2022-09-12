@@ -10,6 +10,7 @@ import {
   styleMap,
   refobject,
   RefObject,
+  QueryString,
 } from '@mantou/gem';
 import { hotkeys } from 'duoyun-ui/lib/hotkeys';
 import { Loadbar } from 'duoyun-ui/elements/page-loadbar';
@@ -19,15 +20,19 @@ import { forever } from 'duoyun-ui/lib/utils';
 import {
   configure,
   getShortcut,
-  toggoleFriendListState,
-  toggoleSearchState,
-  toggoleSettingsState,
+  toggleFriendListState,
+  setSearchCommand,
+  toggleSearchState,
+  toggleSettingsState,
+  SearchCommand,
 } from 'src/configure';
 import { routes, locationStore } from 'src/routes';
 import { enterPubRoom, getAccount, getFriends, getGames, subscribeEvent } from 'src/services/api';
 import { paramKeys, queryKeys } from 'src/constants';
 import { i18n } from 'src/i18n';
 import { preventDefault } from 'src/utils';
+import { friendStore, toggleFriendChatState } from 'src/store';
+import { ScFriendStatus } from 'src/generated/graphql';
 
 import 'duoyun-ui/elements/input-capture';
 import 'duoyun-ui/elements/drawer';
@@ -38,7 +43,6 @@ import 'src/modules/search';
 import 'src/modules/friend-list';
 import 'src/modules/chat';
 import 'src/modules/nav';
-import 'src/modules/footer';
 
 const style = createCSSSheet(css`
   :host {
@@ -81,10 +85,33 @@ export class AppRootElement extends GemElement {
     this.contentRef.element?.scrollTo(0, 0);
   };
 
+  #openUnReadMessage = () => {
+    const hasUnreadMsgUserId = friendStore.friendIds?.find((id) => friendStore.friends[id]?.unreadMessageCount);
+    if (hasUnreadMsgUserId) {
+      toggleFriendChatState(hasUnreadMsgUserId);
+    } else if (
+      (friendStore.friendIds?.some((id) => friendStore.friends[id]?.status === ScFriendStatus.Pending) ||
+        friendStore.inviteIds?.length) &&
+      !configure.friendListState
+    ) {
+      toggleFriendListState();
+    } else {
+      toggleFriendChatState(friendStore.recentFriendChat);
+    }
+  };
+
   #globalShortcut = (evt: KeyboardEvent) => {
     hotkeys({
-      [getShortcut('OPEN_SEARCH')]: preventDefault(toggoleSearchState),
-      [getShortcut('OPEN_SETTINGS')]: preventDefault(toggoleSettingsState),
+      [getShortcut('OPEN_SEARCH')]: preventDefault(toggleSearchState),
+      [getShortcut('OPEN_HELP')]: preventDefault(() => setSearchCommand(SearchCommand.HELP)),
+      [getShortcut('OPEN_SETTINGS')]: preventDefault(() => {
+        if (friendStore.friendChatState) {
+          toggleFriendChatState();
+        } else {
+          toggleSettingsState();
+        }
+      }),
+      [getShortcut('QUICK_REPLY')]: preventDefault(this.#openUnReadMessage),
     })(evt);
   };
 
@@ -95,6 +122,7 @@ export class AppRootElement extends GemElement {
     if (rid) {
       history.replace({
         path: createPath(routes.room, { params: { [paramKeys.ROOM_ID]: String(rid) } }),
+        query: new QueryString({ [queryKeys.ROOM_FROM]: history.getParams().path }),
       });
 
       this.addEventListener('dragover', this.#stopPropagation);
@@ -108,7 +136,7 @@ export class AppRootElement extends GemElement {
       enterPubRoom(this.#joinRoom);
     }
 
-    this.effect(this.#enterRoom, () => [configure.user?.playing?.id, history.getParams().path]);
+    this.effect(this.#enterRoom, () => [configure.user?.playing?.id]);
     this.effect(
       () => forever(getGames),
       () => [i18n.currentLanguage],
@@ -126,7 +154,7 @@ export class AppRootElement extends GemElement {
   render = () => {
     return html`
       <m-nav></m-nav>
-      <div class="content" ref=${this.contentRef.ref}>
+      <div tabindex="-1" class="content" ref=${this.contentRef.ref}>
         <main style="display: centents">
           <dy-route
             @loading=${this.#onLoading}
@@ -136,16 +164,16 @@ export class AppRootElement extends GemElement {
           >
             <div style="height: 100vh"></div>
           </dy-route>
+          <div style="height: 3em"></div>
         </main>
-        <m-footer></m-footer>
       </div>
 
-      ${configure.friendChatState ? html`<m-chat .friendId=${configure.friendChatState}></m-chat>` : ''}
+      <m-chat></m-chat>
 
       <dy-drawer
         customize
         .open=${!!configure.friendListState}
-        @close=${toggoleFriendListState}
+        @close=${toggleFriendListState}
         .body=${html`<m-friend-list style=${styleMap({ width: '15em' })}></m-friend-list>`}
       >
       </dy-drawer>
@@ -155,14 +183,14 @@ export class AppRootElement extends GemElement {
         .disableDefualtOKBtn=${true}
         .cancelText=${i18n.get('close')}
         .open=${!!configure.settingsState}
-        @close=${toggoleSettingsState}
+        @close=${toggleSettingsState}
       >
         <m-settings slot="body"></m-settings>
       </dy-modal>
 
       <dy-modal
         customize
-        @close=${toggoleSearchState}
+        @close=${toggleSearchState}
         .maskCloseable=${true}
         .open=${!!configure.searchState}
         .body=${html`<m-search></m-search>`}

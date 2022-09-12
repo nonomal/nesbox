@@ -11,7 +11,7 @@ import 'src/modules/room-item';
 const style = createCSSSheet(css`
   :host {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(25em, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(14em, 1fr));
     grid-template-rows: max-content;
     grid-gap: ${theme.gridGutter};
   }
@@ -25,7 +25,7 @@ const style = createCSSSheet(css`
 @connectStore(store)
 export class MRoomListElement extends GemElement {
   #onClick = (id: number) => {
-    if (store.rooms[id] && store.rooms[id]!.users.length > 10) {
+    if (store.rooms[id] && store.rooms[id]!.users.length > 4) {
       Toast.open('error', i18n.get('tipRoomCrowded'));
     } else {
       enterPubRoom(id);

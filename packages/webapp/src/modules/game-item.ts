@@ -23,19 +23,19 @@ import { getCDNSrc } from 'src/utils';
 
 import 'duoyun-ui/elements/use';
 import 'duoyun-ui/elements/button';
+import 'duoyun-ui/elements/space';
 import 'duoyun-ui/elements/modal';
 
 const style = createCSSSheet(css`
   :host {
     position: relative;
-    display: flex;
-    border-radius: ${theme.normalRound};
-    overflow: hidden;
+  }
+  .actions {
+    position: absolute;
+    top: 0.3em;
+    right: 0.3em;
   }
   .play {
-    position: absolute;
-    top: 0.5em;
-    right: 0.5em;
     border-radius: ${theme.smallRound};
   }
   :host(:not(:hover):not(:focus)) .play {
@@ -45,31 +45,19 @@ const style = createCSSSheet(css`
     cursor: pointer;
     width: 100%;
     aspect-ratio: 503/348;
+    border-radius: ${theme.normalRound};
     object-fit: cover;
+    box-shadow: 0 0 0 0.5px ${theme.borderColor};
   }
   :host(:hover) .cover {
     opacity: 0.7;
   }
-  .footer {
-    padding: 0.3em 0.5em;
-    position: absolute;
-    inset: auto 0 0 0;
-    display: flex;
-    gap: 0.5em;
-    align-items: center;
-    justify-content: space-between;
-    background-color: rgba(0, 0, 0, 0.6);
-    backdrop-filter: blur(1px);
-  }
   .title {
-    flex-grow: 1;
-    min-width: 0;
+    padding: 0.3em 0.5em;
+    text-align: center;
     text-overflow: ellipsis;
     overflow: hidden;
     white-space: nowrap;
-  }
-  .favorite {
-    width: 1.3em;
   }
 `);
 
@@ -81,13 +69,13 @@ const style = createCSSSheet(css`
 @connectStore(i18n.store)
 export class MGameItemElement extends GemElement {
   @boolattribute favorited: boolean;
-  @boolattribute silent: boolean;
 
   @property game: Game;
 
   #onFavoriteClick = (evt: Event) => {
     evt.stopPropagation();
     favoriteGame(this.game.id, !this.favorited);
+    (evt.target as HTMLElement).blur?.();
   };
 
   #onGameClick = async () => {
@@ -95,7 +83,6 @@ export class MGameItemElement extends GemElement {
   };
 
   #onMoreClick = (evt: Event) => {
-    if (this.silent) return;
     evt.stopPropagation();
     history.push({
       path: createPath(routes.game, {
@@ -108,22 +95,24 @@ export class MGameItemElement extends GemElement {
 
   render = () => {
     return html`
-      <img class="cover" loading="lazy" @click=${this.#onMoreClick} src=${getCDNSrc(this.game.preview)} />
-      ${this.silent
-        ? ''
-        : html`<dy-button class="play" small @click=${this.#onGameClick}>${i18n.get('startGame')}</dy-button>`}
-      <div class="footer">
-        <span class="title" title=${this.game.name}>${this.game.name}</span>
-        ${this.silent
-          ? ''
-          : html`
-              <dy-use
-                class="favorite"
-                @click=${this.#onFavoriteClick}
-                .element=${this.favorited ? icons.favorited : icons.favorite}
-              ></dy-use>
-            `}
-      </div>
+      <img
+        draggable="false"
+        class="cover"
+        loading="lazy"
+        @click=${this.#onMoreClick}
+        src=${getCDNSrc(this.game.preview)}
+      />
+      <dy-space class="actions" size="small">
+        <dy-button class="play" small @click=${this.#onGameClick}>${i18n.get('startGame')}</dy-button>
+        <dy-button
+          small
+          tabindex="-1"
+          color="cancel"
+          @click=${this.#onFavoriteClick}
+          .icon=${this.favorited ? icons.favorited : icons.favorite}
+        ></dy-button>
+      </dy-space>
+      <div class="title" title=${this.game.name}>${this.game.name}</div>
     `;
   };
 }

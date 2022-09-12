@@ -16,10 +16,13 @@ const style = createCSSSheet(css`
     padding-inline: ${theme.gridGutter};
   }
   dy-divider {
-    margin-block-end: 2rem;
+    margin-block-end: ${theme.gridGutter};
   }
 `);
 
+/**
+ * @customElement p-favorites
+ */
 @customElement('p-favorites')
 @adoptedStyle(style)
 @connectStore(i18n.store)

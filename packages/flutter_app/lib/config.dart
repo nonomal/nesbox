@@ -1,4 +1,4 @@
-const startUrl = 'https://nesbox.xianqiao.wang';
-// const startUrl = 'http://192.168.0.111:3003';
-const debug = true;
-const statusbarStyle = 'light';
+import 'package:flutter/foundation.dart';
+
+const startUrl = kDebugMode ? 'http://192.168.0.103:3003' : 'https://nesbox.xianqiao.wang';
+const debug = kDebugMode;

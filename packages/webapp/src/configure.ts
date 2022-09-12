@@ -4,7 +4,7 @@ import { Modify } from 'duoyun-ui/lib/types';
 import { createCacheStore } from 'duoyun-ui/lib/utils';
 
 import { LoginMutation } from 'src/generated/guestgraphql';
-import { localStorageKeys, VideoFilter, VideoRenderMethod } from 'src/constants';
+import { events, localStorageKeys, VideoFilter, VideoRenderMethod } from 'src/constants';
 import type { ThemeName } from 'src/theme';
 import { GetAccountQuery } from 'src/generated/graphql';
 
@@ -32,18 +32,31 @@ export const defaultKeybinding = {
 };
 
 const defaultVolume = {
+  hint: 0.1,
   notification: 0.5,
   game: 0.5,
 };
 
 const defaultShortcuts = {
+  QUICK_REPLY: {
+    win: ['.'],
+    mac: ['.'],
+  },
   OPEN_SEARCH: {
     win: ['ctrl', 'k'],
     mac: ['command', 'k'],
   },
+  OPEN_HELP: {
+    win: ['ctrl', 'h'],
+    mac: ['command', 'h'],
+  },
   OPEN_SETTINGS: {
     win: ['esc'],
     mac: ['esc'],
+  },
+  SCREENSHOT: {
+    win: ['ctrl', 'shift', 's'],
+    mac: ['command', 'shift', 's'],
   },
   SAVE_GAME_STATE: {
     win: ['ctrl', 's'],
@@ -53,6 +66,14 @@ const defaultShortcuts = {
     win: ['ctrl', 'l'],
     mac: ['command', 'l'],
   },
+  OPEN_RAM_VIEWER: {
+    win: ['ctrl', 'shift', 'd'],
+    mac: ['command', 'shift', 'd'],
+  },
+  OPEN_CHEAT_SETTINGS: {
+    win: ['ctrl', 'shift', 'c'],
+    mac: ['command', 'shift', 'c'],
+  },
 };
 
 const defaultVideoSettings = {
@@ -60,11 +81,15 @@ const defaultVideoSettings = {
   filter: VideoFilter.DEFAULT,
 };
 
+export type Cheat = { code: string; enabled: boolean; toggleKey: string; comment: string };
+
 export type Settings = {
   keybinding: typeof defaultKeybinding;
   volume: typeof defaultVolume;
   shortcuts: typeof defaultShortcuts;
   video: typeof defaultVideoSettings;
+  cheat: Record<number, Cheat[] | undefined>;
+  tourIndex: number;
 };
 
 export type User = Modify<LoginMutation['login']['user'], { settings: Settings }>;
@@ -85,6 +110,8 @@ export const parseAccount = (account: GetAccountQuery['account']): User => {
       volume: mergeSettings(defaultVolume, settings.volume),
       shortcuts: mergeSettings(defaultShortcuts, settings.shortcuts),
       video: mergeSettings(defaultVideoSettings, settings.video),
+      cheat: settings.cheat || {},
+      tourIndex: settings.tourIndex || 0,
     },
   };
 };
@@ -96,14 +123,20 @@ export interface Profile {
   username: string;
 }
 
+// only char
+export enum SearchCommand {
+  HELP = '?',
+  SELECT_GAME = '~',
+}
+
 interface Configure {
   user?: User;
   profile?: Profile;
   screencastMode?: boolean;
   friendListState?: boolean;
   settingsState?: boolean;
+  searchCommand?: SearchCommand;
   searchState?: boolean;
-  friendChatState?: number;
   usedRelease?: number;
   openNesFile?: File;
   theme: ThemeName;
@@ -120,7 +153,7 @@ export const [configure] = createCacheStore<Configure>(
 export function getShortcut(command: keyof typeof defaultShortcuts, isDisplay = false) {
   const keys = configure.user?.settings.shortcuts[command][isMac ? 'mac' : 'win'];
   if (!keys) return '';
-  if (isDisplay) return keys.map((key) => getDisplayKey(key)).join('+');
+  if (isDisplay) return keys.map((key) => getDisplayKey(key)).join(' ');
   return keys.join('+');
 }
 
@@ -128,24 +161,28 @@ export const deleteUser = () => {
   updateStore(configure, { user: undefined, profile: undefined });
 };
 
-export const toggoleScreencaseMode = () => {
+export const toggleScreencaseMode = () => {
   updateStore(configure, { screencastMode: !configure.screencastMode });
 };
 
-export const toggoleFriendListState = () => {
+export const toggleFriendListState = () => {
   updateStore(configure, { friendListState: !configure.friendListState });
 };
 
-export const toggoleFriendChatState = (id?: number) => {
-  updateStore(configure, { friendChatState: id });
-};
-
-export const toggoleSettingsState = () => {
+export const toggleSettingsState = () => {
   updateStore(configure, { settingsState: !configure.settingsState });
+  if (!configure.settingsState) dispatchEvent(new CustomEvent(events.CLOSE_SETTINGS));
 };
 
-export const toggoleSearchState = () => {
-  updateStore(configure, { searchState: !configure.searchState });
+export const toggleSearchState = () => {
+  updateStore(configure, {
+    searchState: !configure.searchState,
+    searchCommand: configure.searchState ? undefined : configure.searchCommand,
+  });
+};
+
+export const setSearchCommand = (command: SearchCommand | null) => {
+  updateStore(configure, { searchCommand: command || undefined, searchState: true });
 };
 
 export const setNesFile = (file?: File) => {

@@ -68,6 +68,7 @@ fragment ScRoomPart on ScRoom {
   users {
     ...ScUserBasicPart
   }
+  screenshot
 }
 
 fragment ScCommentPart on ScComment {
@@ -81,6 +82,12 @@ fragment ScCommentPart on ScComment {
   updatedAt
 }
 
+fragment ScRecordPart on ScRecord {
+  playTotal
+  lastPlayStartAt
+  lastPlayEndAt
+}
+
 fragment ScFriendPart on ScFriend {
   user {
     ...ScUserBasicPart
@@ -89,6 +96,9 @@ fragment ScFriendPart on ScFriend {
   status
   unreadMessageCount
 }
+query sendVoiceMsg($input: ScVoiceMsgReq!) {
+  voiceMsg(input: $input)
+}
 
 query getGames {
   games {
@@ -96,6 +106,7 @@ query getGames {
   }
   topGames
   favorites
+  recentGames
 }
 
 query getRooms {
@@ -104,9 +115,12 @@ query getRooms {
   }
 }
 
-query getComments($input: ScCommentsReq!) {
-  comments(input: $input) {
+query getComments($gameId: Int!) {
+  comments(input: { gameId: $gameId }) {
     ...ScCommentPart
+  }
+  record(input: { gameId: $gameId }) {
+    ...ScRecordPart
   }
 }
 
@@ -178,9 +192,7 @@ mutation acceptFriend($input: ScUpdateFriend!) {
 }
 
 mutation createInvite($input: ScNewInvite!) {
-  createInvite(input: $input) {
-    ...ScInvitePart
-  }
+  createInvite(input: $input)
 }
 
 mutation acceptInvite($input: ScUpdateInvite!) {
@@ -195,6 +207,12 @@ mutation createRoom($input: ScNewRoom!) {
 
 mutation updateRoom($input: ScUpdateRoom!) {
   updateRoom(input: $input) {
+    ...ScRoomBasicPart
+  }
+}
+
+mutation updateRoomScreenshot($input: ScUpdateRoomScreenshot!) {
+  updateRoomScreenshot(input: $input) {
     ...ScRoomBasicPart
   }
 }
@@ -237,6 +255,10 @@ subscription event {
     }
     sendSignal {
       userId
+      json
+    }
+    voiceSignal {
+      roomId
       json
     }
     login

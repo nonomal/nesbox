@@ -4,10 +4,10 @@ import { theme } from 'src/theme';
 
 const style = createCSSSheet(css`
   :host {
-    display: contents;
+    display: block;
+    padding-inline: ${theme.gridGutter};
   }
   footer {
-    margin-block-start: ${theme.gridGutter};
     padding: ${theme.gridGutter};
     text-align: center;
   }

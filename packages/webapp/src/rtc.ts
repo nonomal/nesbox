@@ -1,11 +1,13 @@
+import { createStore, updateStore } from '@mantou/gem';
 import { Button } from '@mantou/nes';
 
 import { configure } from 'src/configure';
 import { events, SingalEvent, SingalType } from 'src/constants';
-import { i18n } from 'src/i18n';
+import { LocaleKey } from 'src/i18n';
 import { logger } from 'src/logger';
 import { sendSignal } from 'src/services/api';
-import { getTempText } from 'src/utils';
+
+export const pingStore = createStore<{ ping?: number }>({});
 
 const buttonMap: Record<Button, Record<string, Button | undefined>> = {
   [Button.Joypad1Up]: { '2': Button.Joypad2Up, '3': Button.Joypad3Up, '4': Button.Joypad4Up },
@@ -27,6 +29,7 @@ export enum ChannelMessageType {
   KEYUP,
   ROLE_OFFER,
   ROLE_ANSWER,
+  PING,
 }
 
 export type Role =
@@ -50,7 +53,7 @@ export abstract class ChannelMessageBase {
 
   toSystemRole() {
     this.userId = 0;
-    this.username = '系统';
+    this.username = '';
     return this;
   }
 
@@ -59,13 +62,14 @@ export abstract class ChannelMessageBase {
   }
 }
 
+export type SysMsg = [LocaleKey, ...string[]];
 export class TextMsg extends ChannelMessageBase {
   type = ChannelMessageType.CHAT_TEXT;
 
   text: string;
-  constructor(text: string) {
+  constructor(text: string | SysMsg) {
     super();
-    this.text = text;
+    this.text = typeof text === 'string' ? text : text.join('\n');
   }
 }
 
@@ -102,12 +106,23 @@ export class RoleAnswer extends ChannelMessageBase {
   }
 }
 
-export type ChannelMessage = TextMsg | KeyDownMsg | KeyUpMsg | RoleOffer | RoleAnswer;
+export class Ping extends ChannelMessageBase {
+  type = ChannelMessageType.PING;
+
+  prevPing?: number;
+  constructor(prevPing?: number) {
+    super();
+    this.prevPing = prevPing;
+  }
+}
+
+export type ChannelMessage = TextMsg | KeyDownMsg | KeyUpMsg | RoleOffer | RoleAnswer | Ping;
 
 export class RTC extends EventTarget {
   #host = 0;
   #isHost = false;
   #restartTimer = 0;
+  #pingTimer = 0;
 
   #connMap = new Map<number, RTCPeerConnection>();
   #channelMap = new Map<RTCPeerConnection, RTCDataChannel>();
@@ -192,7 +207,7 @@ export class RTC extends EventTarget {
         this.#roles = this.#roles.map((role) => (role?.userId === userId ? undefined : role));
         this.#emitAnswer();
 
-        const textMsg = new TextMsg(getTempText(i18n.get('leaveRoomMsg', username))).toSystemRole();
+        const textMsg = new TextMsg(['leaveRoomMsg', username]).toSystemRole();
         this.#channelMap.forEach((channel) => channel.send(textMsg.toString()));
         this.#emitMessage(textMsg);
       };
@@ -214,6 +229,10 @@ export class RTC extends EventTarget {
         case ChannelMessageType.ROLE_OFFER:
           this.#setRoles(userId, msg as RoleOffer);
           this.#emitAnswer();
+          break;
+        case ChannelMessageType.PING:
+          channel.send(data);
+          channel.clientPrevPing = (msg as Ping).prevPing;
           break;
       }
     };
@@ -264,7 +283,12 @@ export class RTC extends EventTarget {
   #startClient = async () => {
     const conn = this.#createRTCPeerConnection(configure.user!.id);
 
-    const channel = conn.createDataChannel('msg');
+    /**
+     * 不按顺序接收消息的问题
+     * 1. 帧可能乱序，可以在帧数据上添加帧数，但需要复制内存（性能消耗多少？）
+     * 2. ping 值不准确
+     */
+    const channel = conn.createDataChannel('msg', { ordered: false });
     channel.binaryType = 'arraybuffer';
     channel.onopen = () => {
       clearTimeout(this.#restartTimer);
@@ -275,14 +299,24 @@ export class RTC extends EventTarget {
       this.#channelMap.set(conn, channel);
       this.send(new RoleOffer(this.#roles.findIndex((role) => role?.userId === configure.user!.id)));
 
-      const textMsg = new TextMsg(getTempText(i18n.get('enterRoomMsg', configure.user!.nickname))).toSystemRole();
+      const textMsg = new TextMsg(['enterRoomMsg', configure.user!.nickname]).toSystemRole();
       this.send(textMsg);
+
+      this.#sendPing();
     };
     channel.onmessage = ({ data }: MessageEvent<string | ArrayBuffer>) => {
       if (typeof data === 'string') {
         const msg = JSON.parse(data) as ChannelMessage;
-        this.#emitMessage(msg);
+        switch (msg.type) {
+          case ChannelMessageType.PING:
+            updateStore(pingStore, { ping: Date.now() - msg.timestamp });
+            break;
+          default:
+            this.#emitMessage(msg);
+            break;
+        }
       } else {
+        // compressed frame
         this.#emitMessage(data);
       }
     };
@@ -317,6 +351,11 @@ export class RTC extends EventTarget {
     this.#restartTimer = window.setTimeout(() => this.#restart(), 2000);
   };
 
+  #sendPing = () => {
+    this.send(new Ping(pingStore.ping), false);
+    this.#pingTimer = window.setTimeout(this.#sendPing, 1000);
+  };
+
   #restart = () => {
     logger.info('rtc restarting...');
     this.destroy();
@@ -345,19 +384,47 @@ export class RTC extends EventTarget {
     this.#connMap.forEach((_, id) => this.#deleteUser(id));
     removeEventListener(events.SINGAL, this.#onSignal);
     clearTimeout(this.#restartTimer);
+
+    clearInterval(this.#pingTimer);
+    updateStore(pingStore, { ping: undefined });
   };
 
-  send = (data: ChannelMessage) => {
-    this.#channelMap.forEach((c) => c.readyState === 'open' && c.send(data.toString()));
-    this.#emitMessage(data);
+  send = (data: ChannelMessage, emit = true) => {
+    this.#channelMap.forEach((c) => {
+      if (c.readyState === 'open') {
+        c.send(data.toString());
+      }
+    });
+    if (emit) {
+      this.#emitMessage(data);
+    }
   };
 
   needSendFrame = () => {
     return !!this.#channelMap.size;
   };
 
-  sendFrame = (frame: ArrayBuffer) => {
-    this.#channelMap.forEach((c) => c.readyState === 'open' && c.send(frame));
+  sendFrame = (frame: ArrayBuffer, frameNum: number) => {
+    this.#channelMap.forEach((channel) => {
+      // Wait for client to send ping
+      if (!channel.clientPrevPing) return;
+
+      if (channel.clientPrevPing < 30) {
+        channel.send(frame);
+      } else if (channel.clientPrevPing < 90) {
+        if (frameNum % 2 === 0) {
+          channel.send(frame);
+        }
+      } else if (channel.clientPrevPing < 150) {
+        if (frameNum % 3 === 0) {
+          channel.send(frame);
+        }
+      } else if (channel.clientPrevPing < 300) {
+        if (frameNum % 6 === 0) {
+          channel.send(frame);
+        }
+      }
+    });
   };
 
   kickoutRole = (userId: number) => {
@@ -366,3 +433,12 @@ export class RTC extends EventTarget {
     this.send(new RoleAnswer(this.#roles));
   };
 }
+
+const dataChannelSend = RTCDataChannel.prototype.send;
+RTCDataChannel.prototype.send = function (this: RTCDataChannel, data: string | Blob | ArrayBuffer | ArrayBufferView) {
+  try {
+    dataChannelSend.apply(this, [data]);
+  } catch {
+    //
+  }
+};

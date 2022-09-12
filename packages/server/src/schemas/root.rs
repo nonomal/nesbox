@@ -8,8 +8,10 @@ use super::invite::*;
 use super::message::*;
 use super::notify::*;
 use super::playing::*;
+use super::record::*;
 use super::room::*;
 use super::user::*;
+use crate::voice::*;
 use futures::Stream;
 use juniper::{graphql_subscription, EmptySubscription, FieldError, FieldResult, RootNode};
 use std::pin::Pin;
@@ -22,6 +24,10 @@ impl QueryRoot {
         let conn = DB_POOL.get().unwrap();
         Ok(get_games(&conn))
     }
+    fn recent_games(context: &Context) -> FieldResult<Vec<i32>> {
+        let conn = DB_POOL.get().unwrap();
+        Ok(get_recent_ids(&conn, context.user_id))
+    }
     fn top_games(_context: &Context) -> FieldResult<Vec<i32>> {
         let conn = DB_POOL.get().unwrap();
         Ok(get_top_ids(&conn))
@@ -33,6 +39,10 @@ impl QueryRoot {
     fn comments(_context: &Context, input: ScCommentsReq) -> FieldResult<Vec<ScComment>> {
         let conn = DB_POOL.get().unwrap();
         Ok(get_comments(&conn, input.game_id))
+    }
+    fn record(context: &Context, input: ScRecordReq) -> FieldResult<Option<ScRecord>> {
+        let conn = DB_POOL.get().unwrap();
+        Ok(get_record(&conn, context.user_id, input.game_id))
     }
     fn account(context: &Context) -> FieldResult<ScUser> {
         let conn = DB_POOL.get().unwrap();
@@ -53,6 +63,25 @@ impl QueryRoot {
     fn invites(context: &Context) -> FieldResult<Vec<ScInvite>> {
         let conn = DB_POOL.get().unwrap();
         Ok(get_invites(&conn, context.user_id))
+    }
+    fn voice_msg(context: &Context, input: ScVoiceMsgReq) -> FieldResult<String> {
+        let conn = DB_POOL.get().unwrap();
+        let user_id = context.user_id;
+        if let Some(room_id) = get_playing(&conn, user_id).map(|room| room.id) {
+            tokio::spawn(async move {
+                handle_msg(user_id, room_id, input, move |json| {
+                    notify(
+                        user_id,
+                        ScNotifyMessageBuilder::default()
+                            .voice_signal(ScVoiceSignal { json, room_id })
+                            .build()
+                            .unwrap(),
+                    );
+                })
+                .await;
+            });
+        }
+        Ok("ok".into())
     }
 }
 
@@ -124,14 +153,19 @@ impl MutationRoot {
     fn apply_friend(context: &Context, input: ScNewFriend) -> FieldResult<String> {
         let conn = DB_POOL.get().unwrap();
         if let Ok(target_user) = get_user_by_username(&conn, &input.username) {
-            if let Ok(friend) = apply_friend(&conn, context.user_id, target_user.id) {
-                notify(
-                    target_user.id,
-                    ScNotifyMessageBuilder::default()
-                        .apply_friend(friend.clone())
-                        .build()
-                        .unwrap(),
-                );
+            if context.user_id != target_user.id {
+                match apply_friend(&conn, context.user_id, target_user.id) {
+                    Ok(friend) => {
+                        notify(
+                            target_user.id,
+                            ScNotifyMessageBuilder::default()
+                                .apply_friend(friend.clone())
+                                .build()
+                                .unwrap(),
+                        );
+                    }
+                    Err(err) => log::debug!("{:?}", err),
+                }
             }
         }
         Ok("Ok".into())
@@ -160,17 +194,34 @@ impl MutationRoot {
         }
         Ok("Ok".into())
     }
-    fn create_invite(context: &Context, input: ScNewInvite) -> FieldResult<ScInvite> {
+    fn create_invite(context: &Context, input: ScNewInvite) -> FieldResult<String> {
         let conn = DB_POOL.get().unwrap();
-        let invite = create_invite(&conn, context.user_id, &input)?;
-        notify(
-            input.target_id,
-            ScNotifyMessageBuilder::default()
-                .new_invite(invite.clone())
-                .build()
-                .unwrap(),
-        );
-        Ok(invite)
+        let room_id = get_playing(&conn, input.target_id).map(|room| room.id);
+        if Some(input.room_id) != room_id {
+            match create_invite(&conn, context.user_id, &input) {
+                Ok((deleted_invite, invite)) => {
+                    if let Some(deleted_id) = deleted_invite {
+                        notify(
+                            input.target_id,
+                            ScNotifyMessageBuilder::default()
+                                .delete_invite(deleted_id)
+                                .build()
+                                .unwrap(),
+                        );
+                    }
+                    notify(
+                        invite.target_id,
+                        ScNotifyMessageBuilder::default()
+                            .new_invite(invite.clone())
+                            .build()
+                            .unwrap(),
+                    );
+                }
+                Err(err) => log::debug!("{:?}", err),
+            }
+        }
+
+        Ok("Ok".into())
     }
     fn accept_invite(context: &Context, input: ScUpdateInvite) -> FieldResult<String> {
         let conn = DB_POOL.get().unwrap();
@@ -183,7 +234,6 @@ impl MutationRoot {
 
             if room_id != invite.room.id {
                 if room_host == context.user_id {
-                    delete_playing_with_room(&conn, room_id);
                     delete_room(&conn, room_id);
                     notify_all(
                         ScNotifyMessageBuilder::default()
@@ -238,6 +288,13 @@ impl MutationRoot {
 
         Ok(room)
     }
+    fn update_room_screenshot(
+        context: &Context,
+        input: ScUpdateRoomScreenshot,
+    ) -> FieldResult<ScRoomBasic> {
+        let conn = DB_POOL.get().unwrap();
+        Ok(update_room_screenshot(&conn, context.user_id, &input)?)
+    }
     fn enter_pub_room(context: &Context, input: ScUpdatePlaying) -> FieldResult<ScRoomBasic> {
         let conn = DB_POOL.get().unwrap();
         let room = get_room(&conn, input.room_id)?;
@@ -255,40 +312,41 @@ impl MutationRoot {
         Ok(room)
     }
     fn leave_room(context: &Context) -> FieldResult<String> {
-        let conn = DB_POOL.get().unwrap();
-        let room = get_playing(&conn, context.user_id).unwrap();
-        if context.user_id == room.host {
-            delete_playing_with_room(&conn, room.id);
-        }
-        let invites = get_invites_with(&conn, context.user_id);
-        leave_room(&conn, context.user_id, room.id);
-        for invite in invites {
-            notify(
-                invite.target_id,
-                ScNotifyMessageBuilder::default()
-                    .delete_invite(invite.id)
-                    .build()
-                    .unwrap(),
-            );
-        }
-        notify_ids(
-            get_friend_ids(&conn, context.user_id),
+        leave_room_and_notify(context.user_id)
+    }
+}
+
+pub fn leave_room_and_notify(user_id: i32) -> FieldResult<String> {
+    let conn = DB_POOL.get().unwrap();
+    let room = get_playing(&conn, user_id).ok_or(format!("{} not playing", user_id))?;
+    if user_id == room.host {
+        delete_room(&conn, room.id);
+        notify_all(
             ScNotifyMessageBuilder::default()
-                .update_user(get_user_basic(&conn, context.user_id)?)
+                .delete_room(room.id)
+                .build()
+                .unwrap(),
+        )
+    }
+    let invites = get_invites_with(&conn, user_id);
+    leave_room(&conn, user_id, room.id);
+    for invite in invites {
+        notify(
+            invite.target_id,
+            ScNotifyMessageBuilder::default()
+                .delete_invite(invite.id)
                 .build()
                 .unwrap(),
         );
-        if get_room_user_ids(&conn, room.id).len() == 0 {
-            delete_room(&conn, room.id);
-            notify_all(
-                ScNotifyMessageBuilder::default()
-                    .delete_room(room.id)
-                    .build()
-                    .unwrap(),
-            )
-        }
-        Ok("Ok".into())
     }
+    notify_ids(
+        get_friend_ids(&conn, user_id),
+        ScNotifyMessageBuilder::default()
+            .update_user(get_user_basic(&conn, user_id)?)
+            .build()
+            .unwrap(),
+    );
+    Ok("Ok".into())
 }
 
 pub struct Subscription;
